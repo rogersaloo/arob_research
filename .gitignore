@@ -6,4 +6,9 @@ genh29_9.pth.tar
 genz29_9.pth.tar
 envarob
 disc29_9.pth.tar
+data_preprocessing
+<<<<<<< HEAD
 .idea
+=======
+data_preprocessing
+>>>>>>> 0e7a4ff9582907aefc9ad431e344e5b03ed962dd
