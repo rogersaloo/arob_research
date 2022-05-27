@@ -7,6 +7,9 @@ genz29_9.pth.tar
 envarob
 disc29_9.pth.tar
 data_preprocessing
+alldata
+.ipynb_checkpoints/
+
 <<<<<<< HEAD
 .idea
 =======
