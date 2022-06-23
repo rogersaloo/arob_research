@@ -1,0 +1,15 @@
+{
+    "product": {
+      "id": 1234567890,
+      "title": "My Super Awesome Product",
+      "vendor": "Vendor Test",
+      "product_type": "Type Test",
+      "created_at": "2020-05-11T16:07:45-04:00",
+      "updated_at": "2020-05-26T14:32:09-04:00",
+      "options": [
+        {
+          "id": 1234567890
+        }
+      ]
+    }
+  }

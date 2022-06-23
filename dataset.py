@@ -36,17 +36,3 @@ class NormalPneumonia(Dataset):
 
         return normal_img, pneumonia_img
 
-# path = "C:/Users/Aloo/Documents/Research/arob/"
-# new_path = os.path.join(path,fid_config.NORMAL_PATH)
-# print(new_path)
-# sys.exit()
-# import config
-# lr = config.LEARNING_RATE
-# batch = config.BATCH_SIZE
-# epoch = config.NUM_EPOCHS
-#
-# #Batch 1-ep_100 lr1e-2
-# NORMAL_PATH = f"fid/batch_{batch}-epoch_{epoch}-lr_{lr}/real"
-# SYNTHESIS_PATH = f"fid/{batch}-{epoch}-{lr}/synthetic/"
-# NORMAL_IMAGE_LABEL=f"norm-batch_{batch}-epoch_{epoch}-lr_{lr}"
-# PNEUMONIA_IMAGE_LABEL=f"pneu-batch_{batch}-epoch_{epoch}-lr_{lr}"

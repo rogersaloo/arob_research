@@ -16,34 +16,42 @@ from torch.utils.tensorboard import SummaryWriter
 import sys
 import fid_config
 
-writer_real= SummaryWriter(f'runs/GAN/test_real')
-writer_fake= SummaryWriter(f'runs/GAN/test_fake')
+writer = SummaryWriter(f'runs/GANloss')
+# writer_real = SummaryWriter(f'runs/GAN/Dloss')
+# writer_disc= SummaryWriter(f'runs/GAN/Gloss')
 
 dataset = NormalPneumonia(
-        root_pneumonia=config.TRAIN_DIR+"/normal", root_normal=config.TRAIN_DIR+"/pneumonia", transform=config.transforms
-    )
-    # val_dataset = PneumonianormalDataset(
-    #    root_pneumonia="cyclegan_test/pneumonias", root_normal="cyclegan_test/normals", transform=config.transforms
-    # )
-    # val_loader = DataLoader(
-    #     val_dataset,
-    #     batch_size=1,
-    #     shuffle=False,
-    #     pin_memory=True,
-    # )
+    root_pneumonia=config.TRAIN_DIR + "/normal", root_normal=config.TRAIN_DIR + "/pneumonia",
+    transform=config.transforms
+)
+# val_dataset = PneumonianormalDataset(
+#    root_pneumonia="cyclegan_test/pneumonias", root_normal="cyclegan_test/normals", transform=config.transforms
+# )
+# val_loader = DataLoader(
+#     val_dataset,
+#     batch_size=1,
+#     shuffle=False,
+#     pin_memory=True,
+# )
 loader = DataLoader(
     dataset,
     batch_size=config.BATCH_SIZE,
     shuffle=True,
     num_workers=config.NUM_WORKERS,
     pin_memory=True
-    )
+)
+
 
 def train_fn(disc_H, disc_Z, gen_Z, gen_H, loader, opt_disc, opt_gen, l1, mse, d_scaler, g_scaler):
     H_reals = 0
     H_fakes = 0
     loop = tqdm(loader, leave=True)
-    global fake_pneumonia
+    # global fake_pneumonia
+    step = 0
+    # step_d = 0
+    # step_g = 0
+    loss_g_list = []
+    loss_d_list = []
 
     for idx, (normal, pneumonia) in enumerate(loop):
         normal = normal.to(config.DEVICE)
@@ -68,12 +76,14 @@ def train_fn(disc_H, disc_Z, gen_Z, gen_H, loader, opt_disc, opt_gen, l1, mse, d
             D_Z_loss = D_Z_real_loss + D_Z_fake_loss
 
             # put it togethor
-            D_loss = (D_H_loss + D_Z_loss)/2
-
+            D_loss = (D_H_loss + D_Z_loss) / 2
+        loss_d_list.append(D_loss)
         opt_disc.zero_grad()
         d_scaler.scale(D_loss).backward()
         d_scaler.step(opt_disc)
         d_scaler.update()
+        # writer.add_scalar('Disclose', D_loss, global_step = step_d)
+        # step +=1
 
         # Train Generators H and Z
         with torch.cuda.amp.autocast():
@@ -90,35 +100,46 @@ def train_fn(disc_H, disc_Z, gen_Z, gen_H, loader, opt_disc, opt_gen, l1, mse, d
             cycle_pneumonia_loss = l1(pneumonia, cycle_pneumonia)
 
             # identity loss (remove these for efficiency if you set lambda_identity=0)
-            identity_normal = gen_Z(normal)
-            identity_pneumonia = gen_H(pneumonia)
-            identity_normal_loss = l1(normal, identity_normal)
-            identity_pneumonia_loss = l1(pneumonia, identity_pneumonia)
+            # identity_normal = gen_Z(normal)
+            # identity_pneumonia = gen_H(pneumonia)
+            # identity_normal_loss = l1(normal, identity_normal)
+            # identity_pneumonia_loss = l1(pneumonia, identity_pneumonia)
 
             # add all togethor
             G_loss = (
-                loss_G_Z
-                + loss_G_H
-                + cycle_normal_loss * config.LAMBDA_CYCLE
-                + cycle_pneumonia_loss * config.LAMBDA_CYCLE
-                + identity_pneumonia_loss * config.LAMBDA_IDENTITY
-                + identity_normal_loss * config.LAMBDA_IDENTITY
+                    loss_G_Z
+                    + loss_G_H
+                    + cycle_normal_loss * config.LAMBDA_CYCLE
+                    + cycle_pneumonia_loss * config.LAMBDA_CYCLE
+                    # + identity_pneumonia_loss * config.LAMBDA_IDENTITY
+                    # + identity_normal_loss * config.LAMBDA_IDENTITY
             )
-
+        loss_g_list.append(G_loss)
         opt_gen.zero_grad()
         g_scaler.scale(G_loss).backward()
         g_scaler.step(opt_gen)
         g_scaler.update()
+        # writer_disc.add_scalar('Disclose', G_loss, global_step=step_g)
+        # step_g += 1
+        writer.add_scalar('Generator_loss_normal', G_loss, global_step=step)
+        writer.add_scalar('Discriminator_loss_normal', D_loss, global_step=step)
+        step += 1
 
         if idx % 2 == 0:
-            save_image(fake_pneumonia*0.5+0.5, f"saved_images/{fid_config.NORMAL_IMAGE_LABEL}_{idx}.png")
-            save_image(fake_normal*0.5+0.5, f"saved_images/{fid_config.PNEUMONIA_IMAGE_LABEL}_{idx}.png")
+            save_image(fake_pneumonia * 0.5 + 0.5, f"saved_images/{fid_config.NORMAL_IMAGE_LABEL}_{idx}.png")
+            save_image(fake_normal * 0.5 + 0.5, f"saved_images/{fid_config.PNEUMONIA_IMAGE_LABEL}_{idx}.png")
 
-        loop.set_postfix(H_real=H_reals/(idx+1), H_fake=H_fakes/(idx+1))
+        loop.set_postfix(H_real=H_reals / (idx + 1), H_fake=H_fakes / (idx + 1))
 
-# img_grid = torchvision.utils.make_grid(fake_pneumonia train_fn.__globals__)
-# writer_real.add_image('normal', img_grid)
-# writer_real.close()
+
+    # img_grid = torchvision.utils.make_grid(fake_pneumonia)
+
+
+    writer.flush() #make sure that all pending events have been written to disk.
+    writer.close()
+
+
+
 def main():
     global loader
     disc_H = Discriminator(in_channels=3).to(config.DEVICE)
@@ -169,4 +190,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

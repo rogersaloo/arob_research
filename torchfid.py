@@ -1,47 +1,26 @@
-import os
-import logging
-import ignite
-import matplotlib.pyplot as plt
-import numpy as np
-import torchvision.datasets
-from torch.utils.data import DataLoader
 import torch
-import torchvision.transforms as transforms
-import sys
-ignite.utils.manual_seed(999)
-ignite.utils.setup_logger(name="ignite.distributed.auto.auto_dataloader", level=logging.WARNING)
-ignite.utils.setup_logger(name="ignite.distributed.launcher.Parallel", level=logging.WARNING)
+import warnings
+import pandas as pd
+import image_tabular as it
+from typing import Tuple
+from fastai.vision import *
+from fastai.tabular import *
+# from image_tabular import core
+# from image_tabular.dataset import ImageTabDataset
+# from image_tabular.core import *
+# from image_tabular.dataset import *
+# from image_tabular.model import *
+# from image_tabular.metric import *
+warnings.filterwarnings("ignore", category=UserWarning, module="torch.nn.functional")
+# use gpu by default if available
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+data_path = ('alldata/')
 
-#Set the transformation for the dataset
-image_size = 64
-batch_size = 8
+#Import train and test based on the tabular data
+train_df = pd.read_csv(f"{data_path}train_metadata.csv")
+test_df = pd.read_csv(f"{data_path}test_metadata.csv")
 
-real_dataset_path= "fid/real/"
-synth_dataset_path= "fid/synthetic/"
+print(len(train_df), len(test_df))
 
-data_transform = transforms.Compose(
-    [
-        transforms.Resize(image_size),
-         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-    ]
-)
-
-real_dataset = torchvision.datasets.ImageFolder(root=real_dataset_path, transform=data_transform)
-synth_dataset = torchvision.datasets.ImageFolder(root=synth_dataset_path, transform=data_transform)
-
-#show the transformed dataset
-def show_transformed_dataset(dataset):
-    loader = DataLoader(dataset, batch_size, shuffle=True)
-    batch = next(iter(loader))
-    images, labels = batch
-
-    grid = torchvision.utils.make_grid(images, nrow =3)
-    plt.figure(figsize=(11,11))
-    plt.imshow(np.transpose(grid,(1,20)))
-    print('labels', labels)
-
-show_transformed_dataset(real_dataset)
-sys.exit()
-
+it.core.get_valid_index()

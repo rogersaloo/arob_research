@@ -5,14 +5,14 @@ from albumentations.pytorch import ToTensorV2
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 TRAIN_DIR = "data/train"
 VAL_DIR = "data/val"
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 LEARNING_RATE = 4e-4
 LAMBDA_IDENTITY = 1
 LAMBDA_CYCLE = 10
 NUM_WORKERS = 4
-NUM_EPOCHS = 100
+NUM_EPOCHS = 50
 LOAD_MODEL = False
-SAVE_MODEL = True
+SAVE_MODEL = False
 CHECKPOINT_GEN_H = "genh29_9.pth.tar"
 CHECKPOINT_GEN_Z = "genz29_9.pth.tar"
 CHECKPOINT_CRITIC_H = "disc29_9.pth.tar"
