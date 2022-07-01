@@ -43,13 +43,21 @@ with os.scandir(basepath) as images:
 
 #label index list
 if train_annotations is True:
-    """Copy all images to test destination"""
+    """Copy all images to train destination for peumonia and normal"""
     os.makedirs(pneu_train_destination, exist_ok=True)
     for path in pneu_train_pathlist:
         if path in list:
             # shutil.copytree('images', 'sifted2')
             shutil.copy(f'{basepath}/{path}', f"{pneu_train_destination}/{path}")
-        print("File copied train images successfully.")
+        print(f"File copied pneumonia train image {path} successfully.")
+    
+    os.makedirs(norm_train_destination, exist_ok=True)
+    for path in norm_train_pathlist:
+        if path in list:
+            # shutil.copytree('images', 'sifted2')
+            shutil.copy(f'{basepath}/{path}', f"{norm_train_destination}/{path}")
+        print(f"File copied normal train image {path} successfully.")
+    print("Copying train images completed")
 else:
     """Copy all images to test destination"""
     os.makedirs(pneu_test_destination, exist_ok=True)
@@ -57,4 +65,14 @@ else:
         if path in list:
             # shutil.copytree('images', 'sifted2')
             shutil.copy(f'{basepath}/{path}', f"{pneu_test_destination}/{path}")
-        print("File copied test images successfully.")
+        print(f"File copied pneumonia test image {path}  successfully.")
+
+    os.makedirs(norm_test_destination, exist_ok=True)
+    for path in norm_test_pathlist:
+        if path in list:
+            # shutil.copytree('images', 'sifted2')
+            shutil.copy(f'{basepath}/{path}', f"{norm_test_destination}/{path}")
+        print(f"File copied normal test image {path}  successfully.")
+    print("Copying test images completed")
+
+

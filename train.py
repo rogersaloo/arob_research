@@ -21,7 +21,7 @@ writer = SummaryWriter(f'runs/GANloss')
 # writer_disc= SummaryWriter(f'runs/GAN/Gloss')
 
 dataset = NormalPneumonia(
-    root_pneumonia=config.TRAIN_DIR + "/normal", root_normal=config.TRAIN_DIR + "/pneumonia",
+    root_pneumonia=config.TRAIN_DIR + "/pneu_train_images", root_normal=config.TRAIN_DIR + "/norm_train_images",
     transform=config.transforms
 )
 # val_dataset = PneumonianormalDataset(
@@ -125,7 +125,7 @@ def train_fn(disc_H, disc_Z, gen_Z, gen_H, loader, opt_disc, opt_gen, l1, mse, d
         writer.add_scalar('Discriminator_loss_normal', D_loss, global_step=step)
         step += 1
 
-        if idx % 2 == 0:
+        if idx % 100 == 0:
             save_image(fake_pneumonia * 0.5 + 0.5, f"saved_images/{fid_config.NORMAL_IMAGE_LABEL}_{idx}.png")
             save_image(fake_normal * 0.5 + 0.5, f"saved_images/{fid_config.PNEUMONIA_IMAGE_LABEL}_{idx}.png")
 
