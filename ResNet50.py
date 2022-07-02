@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import numpy as np
 import torch.nn as nn
@@ -94,10 +95,10 @@ class Identity(nn.Module):
 
 
 # Model
-model = torchvision.models.vgg16(pretrained=True)
-model.classifier = nn.Linear(32768, 2)
-model.features[0] = nn.Conv2d(1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-model.avgpool = nn.AdaptiveAvgPool2d(output_size=(8, 8))
+model = torchvision.models.resnet50(pretrained=True)
+model.fc = nn.Linear(2048, 2)
+model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3))
+# model.avgpool = nn.AdaptiveAvgPool2d(output_size=(8, 8))
 model.to(device)
 print(model)
 
@@ -152,7 +153,6 @@ def check_accuracy(loader, model):
     num_correct = 0
     num_wrong = 0
     num_samples = 0
-    pneu_corrects = 0
     model.eval()
 
     with torch.no_grad():
@@ -163,14 +163,12 @@ def check_accuracy(loader, model):
             scores_test = model(x)
             _, predictions = scores_test.max(1)
             num_correct += (predictions == y).sum()
-            pneu_corrects += (predictions == 1).sum()
             num_wrong += (predictions != y).sum()
             num_samples += predictions.size(0)
 
         print(
             f"Got {num_correct} / {num_samples} with accuracy {float(num_correct) / float(num_samples) * 100:.2f}"
         )
-        print(pneu_corrects)
         print(
             f"sensitivity equals {num_correct} / ({num_correct} + {num_wrong}) with sensitivity of {(float(num_correct) / (float(num_correct) + float(num_correct))) }"
         )
