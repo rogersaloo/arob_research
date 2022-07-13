@@ -154,6 +154,7 @@ def check_accuracy(loader, model):
     num_wrong = 0
     num_samples = 0
     model.eval()
+    CM=0
 
     with torch.no_grad():
         for x, y in loader:
@@ -162,15 +163,30 @@ def check_accuracy(loader, model):
 
             scores_test = model(x)
             _, predictions = scores_test.max(1)
+
+            CM += confusion_matrix(y.cpu(), predictions.cpu(), labels=[0, 1])
+            tn = CM[0][0]
+            tp = CM[1][1]
+            fp = CM[0][1]
+            fn = CM[1][0]
+            acc = np.sum(np.diag(CM) / np.sum(CM))
+            sensitivity = tp / (tp + fn)
+            precision = tp / (tp + fp)
+
+            print('\nTestset Accuracy(mean): %f %%' % (100 * acc))
+
             num_correct += (predictions == y).sum()
             num_wrong += (predictions != y).sum()
             num_samples += predictions.size(0)
-
+        print('Confusion Matirx : ')
+        print(CM)
+        print('- Sensitivity : ', (tp / (tp + fn)) * 100)
+        print('- Specificity : ', (tn / (tn + fp)) * 100)
+        print('- Precision: ', (tp / (tp + fp)) * 100)
+        print('- NPV: ', (tn / (tn + fn)) * 100)
+        print('- F1 : ', ((2 * sensitivity * precision) / (sensitivity + precision)) * 100)
         print(
             f"Got {num_correct} / {num_samples} with accuracy {float(num_correct) / float(num_samples) * 100:.2f}"
-        )
-        print(
-            f"sensitivity equals {num_correct} / ({num_correct} + {num_wrong}) with sensitivity of {(float(num_correct) / (float(num_correct) + float(num_correct))) }"
         )
 
     model.train()

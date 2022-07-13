@@ -18,10 +18,10 @@ import seaborn as sns
 #Variables
 # csv_file = "train_metadata.csv",
 from tqdm import tqdm
-
-csv_file = 'sample_data/sample_data_combine.csv'
-# root_dir = "alldata/train/real_train_images",
-root_dir = 'sample_data/sample_images_combined'
+csv_file = 'alldata/train/train_metadata_error.csv'
+# csv_file = 'sample_data/sample_data_combine.csv'
+root_dir = "alldata/train/real_train_images",
+# root_dir = 'sample_data/sample_images_combined'
 
 transforming = transforms.Compose([
     transforms.ToTensor()])
@@ -40,10 +40,11 @@ class PneuAndNormalDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = os.path.join(self.root_dir, self.annotations.iloc[index, 0])
+        print(img_path)
         # image = io.imread(img_path)
         image = np.array(Image.open(img_path).convert("L").resize([256, 256]))
-        # y_label = torch.tensor(int(self.annotations.iloc[index, 11]))
-        y_label = self.annotations.iloc[index, 6]
+        y_label = self.annotations.iloc[index, 1]
+        # y_label = self.annotations.iloc[index, 6]
         if self.transform:
             image = self.transform(image)
 
@@ -58,7 +59,7 @@ in_channel = 1
 num_classes = 2
 learning_rate = 1e-3
 batch_size = 16
-num_epochs = 3
+num_epochs = 20
 
 # Load Data
 dataset = PneuAndNormalDataset(
@@ -66,8 +67,9 @@ dataset = PneuAndNormalDataset(
     root_dir=root_dir,
 )
 
-# train_set, test_set = torch.utils.data.random_split(dataset, [38846, 9700])
-train_set, test_set = torch.utils.data.random_split(dataset, [700, 212])
+
+train_set, test_set = torch.utils.data.random_split(dataset, [38846, 9700])
+# train_set, test_set = torch.utils.data.random_split(dataset, [700, 212])
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
 
@@ -82,16 +84,12 @@ label = train_labels[0]
 # plt.show()
 # print(f"Label: {label}")
 
-# create grid of images
-tensorboard_images = iter(train_loader)
-
 class Identity(nn.Module):
     def __init__(self):
         super(Identity, self).__init__()
 
     def forward(self, x):
         return x
-
 
 # Model
 model = torchvision.models.vgg16(pretrained=True)
@@ -115,7 +113,7 @@ for epoch in range(num_epochs):
     losses = []
     accuracies = []
 
-    for batch_idx, (data, targets) in enumerate(train_loader):
+    for batch_idx, (data, targets) in enumerate(tqdm(train_loader)):
         # Get data to cuda if possible
         data = data.to(device=device)
         targets = targets.to(device=device)
@@ -152,8 +150,8 @@ def check_accuracy(loader, model):
     num_correct = 0
     num_wrong = 0
     num_samples = 0
-    pneu_corrects = 0
     model.eval()
+    CM=0
 
     with torch.no_grad():
         for x, y in loader:
@@ -162,15 +160,24 @@ def check_accuracy(loader, model):
 
             scores_test = model(x)
             _, predictions = scores_test.max(1)
+
+            CM += confusion_matrix(y, predictions, labels=[0, 1])
+            tn = CM[0][0]
+            tp = CM[1][1]
+            fp = CM[0][1]
+            fn = CM[1][0]
+            acc = np.sum(np.diag(CM) / np.sum(CM))
+            sensitivity = tp / (tp + fn)
+            precision = tp / (tp + fp)
+            print(CM)
+
             num_correct += (predictions == y).sum()
-            pneu_corrects += (predictions == 1).sum()
             num_wrong += (predictions != y).sum()
             num_samples += predictions.size(0)
 
         print(
             f"Got {num_correct} / {num_samples} with accuracy {float(num_correct) / float(num_samples) * 100:.2f}"
         )
-        print(pneu_corrects)
         print(
             f"sensitivity equals {num_correct} / ({num_correct} + {num_wrong}) with sensitivity of {(float(num_correct) / (float(num_correct) + float(num_correct))) }"
         )
