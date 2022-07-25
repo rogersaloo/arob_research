@@ -1,34 +1,29 @@
 import os
-import sys
 import torch
 import numpy as np
+import pandas as pd
+import torchvision
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
-import torchvision
-import matplotlib.pyplot as plt
-import pandas as pd
+from tqdm import tqdm
+from PIL import Image
 from torch.utils.data import (Dataset, DataLoader, )
 from torch.utils.tensorboard import SummaryWriter
-from PIL import Image
 from sklearn.metrics import confusion_matrix
-import seaborn as sn
-import pandas as pd
-import seaborn as sns
+
 
 #Variables
 # csv_file = "train_metadata.csv",
-from tqdm import tqdm
-
 csv_file = 'sample_data/sample_data_combine.csv'
 # root_dir = "alldata/train/real_train_images",
 root_dir = 'sample_data/sample_images_combined'
 
-transforming = transforms.Compose([
-    transforms.ToTensor()])
+transforming = transforms.Compose([ transforms.ToTensor()])
 
 writer_loss = SummaryWriter('runsclassification/loss')
 writer_accuracy = SummaryWriter('runsclassification/accuracy')
+
 class PneuAndNormalDataset(Dataset):
     def __init__(self, csv_file, root_dir, transform=transforming, target_transform=None):
         self.annotations = pd.read_csv(csv_file)
@@ -47,9 +42,7 @@ class PneuAndNormalDataset(Dataset):
         y_label = self.annotations.iloc[index, 6]
         if self.transform:
             image = self.transform(image)
-
         return image, y_label
-
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -59,13 +52,10 @@ in_channel = 1
 num_classes = 2
 learning_rate = 1e-3
 batch_size = 16
-num_epochs = 3
+num_epochs = 20
 
 # Load Data
-dataset = PneuAndNormalDataset(
-    csv_file=csv_file,
-    root_dir=root_dir,
-)
+dataset = PneuAndNormalDataset( csv_file=csv_file,root_dir=root_dir,)
 
 # train_set, test_set = torch.utils.data.random_split(dataset, [38846, 9700])
 train_set, test_set = torch.utils.data.random_split(dataset, [700, 212])
@@ -92,7 +82,6 @@ class Identity(nn.Module):
 
     def forward(self, x):
         return x
-
 
 # Model
 model = torchvision.models.resnet50(pretrained=True)
@@ -143,15 +132,12 @@ for epoch in range(num_epochs):
         writer_accuracy.add_scalar('Training Loss', running_train_acc, global_step=step)
         step += 1
 
-
-
     print(f"Cost at epoch {epoch} is {sum(losses) / len(losses)}")
 
 
 # Check accuracy on training to see how good our model is
 def check_accuracy(loader, model):
     num_correct = 0
-    num_wrong = 0
     num_samples = 0
     model.eval()
     CM=0
@@ -176,18 +162,17 @@ def check_accuracy(loader, model):
             print('\nTestset Accuracy(mean): %f %%' % (100 * acc))
 
             num_correct += (predictions == y).sum()
-            num_wrong += (predictions != y).sum()
             num_samples += predictions.size(0)
         print('Confusion Matirx : ')
         print(CM)
         print('- Sensitivity : ', (tp / (tp + fn)) * 100)
-        print('- Specificity : ', (tn / (tn + fp)) * 100)
-        print('- Precision: ', (tp / (tp + fp)) * 100)
-        print('- NPV: ', (tn / (tn + fn)) * 100)
-        print('- F1 : ', ((2 * sensitivity * precision) / (sensitivity + precision)) * 100)
-        print(
-            f"Got {num_correct} / {num_samples} with accuracy {float(num_correct) / float(num_samples) * 100:.2f}"
-        )
+        # print('- Specificity : ', (tn / (tn + fp)) * 100)
+        # print('- Precision: ', (tp / (tp + fp)) * 100)
+        # print('- NPV: ', (tn / (tn + fn)) * 100)
+        # print('- F1 : ', ((2 * sensitivity * precision) / (sensitivity + precision)) * 100)
+    print(
+        f"Got {num_correct} / {num_samples} with accuracy {float(num_correct) / float(num_samples) * 100:.2f}"
+    )
 
     model.train()
 
@@ -197,36 +182,4 @@ check_accuracy(train_loader, model)
 
 print("Checking accuracy on Test Set")
 check_accuracy(test_loader, model)
-
-# y_true = []
-# y_pred = []
-#
-# #Confusion Matrix
-# for data in tqdm(test_loader):
-#     images, labels = data[0].to(device), data[1]
-#     y_true.extend(labels.numpy())
-#
-#     outputs = model(images)
-#
-#     _, predicted = torch.max(outputs, 1)
-#     y_pred.extend(predicted.cpu().numpy())
-#
-# cf_matrix = confusion_matrix(y_true, y_pred)
-#
-# class_names = ('pneumonia','normal',)
-#
-# # Create pandas dataframe
-# dataframe = pd.DataFrame(cf_matrix, index=class_names, columns=class_names)
-# print(dataframe)
-#
-# plt.figure(figsize=(6, 4))
-#
-# # Create heatmap
-# sns.heatmap(dataframe, annot=True, cbar=None, cmap="YlGnBu", fmt="d")
-#
-# plt.title("Confusion Matrix"), plt.tight_layout()
-#
-# plt.ylabel("True Class"),
-# plt.xlabel("Predicted Class")
-# plt.show()
 
