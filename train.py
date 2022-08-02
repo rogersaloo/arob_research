@@ -190,3 +190,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+print(torch.cuda.is_available())
